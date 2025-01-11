@@ -68,7 +68,8 @@ class BlogViews(APIView):
                     'title': blog.title,
                     'content': blog.content,
                     'isDraft': blog.isDraft,
-                    'publish_date': blog.publish_date
+                    'publish_date': blog.publish_date,
+                    'comments': blog.comments_set.count()
                 }
             }, status=status.HTTP_200_OK)
         except Blogs.DoesNotExist:
@@ -121,6 +122,7 @@ class BlogViews(APIView):
                 'content': blog.content,
                 'publish_date': blog.publish_date,
                 'author': blog.author.username,
+                'comments': blog.comments_set.count()
             }
             for blog in paginated_blogs
         ]
