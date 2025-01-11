@@ -6,6 +6,7 @@ from rest_framework import status
 from .models import Blogs, Tags ,Comments
 from users.models import CustomUser
 from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
 
 class BlogViews(APIView):
     permission_classes = [IsAuthenticated]  
@@ -100,35 +101,49 @@ class BlogViews(APIView):
                 'message': 'Blog not found or unauthorized access.'
             }, status=status.HTTP_404_NOT_FOUND)
     
-    def get(self, request, pk):
-        try:
-            # Fetch the user by primary key
+    def get(self, request, pk=None):
+        # If `pk` is provided, fetch a specific blog
+        if pk:
             user = CustomUser.objects.get(id=pk)
-            # Fetch all blogs authored by the user
-            blogs = Blogs.objects.filter(author=user,isDraft=False)
+            blogs = Blogs.objects.filter(author=user, isDraft=False)
+        else:
+            blogs = Blogs.objects.filter(isDraft=False)
 
-            paginator = PageNumberPagination()
-            paginator.page_size = 1
-            paginated_blogs = paginator.paginate_queryset(blogs, request) 
-        
-            # Serialize the blog data into a list of dictionaries
-            blog_data = [
-                {
+        # Apply filters if query parameters are present
+        title = request.query_params.get('title')
+        author = request.query_params.get('author')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        content = request.query_params.get('content')
+
+        if title:
+            blogs = blogs.filter(title__icontains=title)
+        if author:
+            blogs = blogs.filter(author__username__icontains=author)
+        if start_date:
+            blogs = blogs.filter(publish_date__gte=start_date)
+        if end_date:
+            blogs = blogs.filter(publish_date__lte=end_date)
+        if content:
+            content = blogs.filter(content__icontains=content)
+
+        # Apply pagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginated_blogs = paginator.paginate_queryset(blogs, request)
+
+        blog_data = [
+            {
                 'id': blog.id,
                 'title': blog.title,
                 'content': blog.content,
-                'isDraft': blog.isDraft,
-                'publish_date': blog.publish_date
-                } for blog in paginated_blogs
-            ]
+                'publish_date': blog.publish_date,
+                'author': blog.author.username,
+            }
+            for blog in paginated_blogs
+        ]
 
-            return paginator.get_paginated_response(blog_data)
-
-        except CustomUser.DoesNotExist:
-            return Response({
-            'success': False,
-            'message': 'User not found or unauthorized access'
-        }, status=status.HTTP_404_NOT_FOUND)
+        return paginator.get_paginated_response(blog_data)
 
 class PublishDraftView(APIView):
     permission_classes = [IsAuthenticated]
