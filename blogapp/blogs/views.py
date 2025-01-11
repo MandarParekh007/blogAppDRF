@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .models import Blogs, Tags
+from .models import Blogs, Tags ,Comments
 from users.models import CustomUser
 from rest_framework.pagination import PageNumberPagination
 
@@ -104,9 +104,8 @@ class BlogViews(APIView):
         try:
             # Fetch the user by primary key
             user = CustomUser.objects.get(id=pk)
-        
             # Fetch all blogs authored by the user
-            blogs = Blogs.objects.filter(author=user)
+            blogs = Blogs.objects.filter(author=user,isDraft=False)
 
             paginator = PageNumberPagination()
             paginator.page_size = 1

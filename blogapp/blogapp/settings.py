@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
     'blogs',
+    'comments',
     'rest_framework_simplejwt',
 ]
 
