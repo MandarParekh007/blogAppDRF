@@ -8,6 +8,7 @@ class Blogs(models.Model):
     publish_date = models.DateField(default=now)
     author = models.ForeignKey(CustomUser, related_name='author_id', on_delete=models.CASCADE, blank=False)
     content = models.TextField(max_length=500)
+    isDraft = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
