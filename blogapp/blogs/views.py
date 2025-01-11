@@ -104,30 +104,12 @@ class BlogViews(APIView):
     def get(self, request, pk=None):
         # If `pk` is provided, fetch a specific blog
         if pk:
-            user = CustomUser.objects.get(id=pk)
+            user = get_object_or_404(CustomUser,id=pk)
             blogs = Blogs.objects.filter(author=user, isDraft=False)
         else:
             blogs = Blogs.objects.filter(isDraft=False)
-
-        # Apply filters if query parameters are present
-        title = request.query_params.get('title')
-        author = request.query_params.get('author')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        content = request.query_params.get('content')
-
-        if title:
-            blogs = blogs.filter(title__icontains=title)
-        if author:
-            blogs = blogs.filter(author__username__icontains=author)
-        if start_date:
-            blogs = blogs.filter(publish_date__gte=start_date)
-        if end_date:
-            blogs = blogs.filter(publish_date__lte=end_date)
-        if content:
-            content = blogs.filter(content__icontains=content)
-
-        # Apply pagination
+        
+            
         paginator = PageNumberPagination()
         paginator.page_size = 10
         paginated_blogs = paginator.paginate_queryset(blogs, request)
@@ -175,3 +157,55 @@ class PublishDraftView(APIView):
                 'success': False,
                 'message': 'Draft blog not found or unauthorized access.'
             }, status=status.HTTP_404_NOT_FOUND)
+        
+class SearchByFilters(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk=None):
+        # Fetch blogs for a specific user if `pk` is provided
+        if pk:
+            user = CustomUser.objects.get(id=pk)
+            blogs = Blogs.objects.filter(author=user, isDraft=False)
+        else:
+            blogs = Blogs.objects.filter(isDraft=False)
+
+        # Apply filters if query parameters are present
+        title = request.data.get('title')
+        author = request.data.get('author')
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        content = request.data.get('content')
+        tags = request.data.get('tags',[])  # Assume tags are sent as a list
+
+        if title:
+            blogs = blogs.filter(title__icontains=title)
+        if author:
+            blogs = blogs.filter(author__username__icontains=author)
+        if start_date:
+            blogs = blogs.filter(publish_date__gte=start_date)
+        if end_date:
+            blogs = blogs.filter(publish_date__lte=end_date)
+        if content:
+            blogs = blogs.filter(content__icontains=content)
+        if tags:
+            blogs = blogs.filter(tags__tag__in=tags).distinct()
+
+        # Paginate the filtered blogs
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginated_blogs = paginator.paginate_queryset(blogs, request)
+
+        # Serialize the paginated blogs
+        blog_data = [
+            {
+                'id': blog.id,
+                'title': blog.title,
+                'content': blog.content,
+                'publish_date': blog.publish_date,
+                'author': blog.author.username,
+                'tags': [tag.tag for tag in blog.tags_set.all()],  # Assuming reverse relation to Tags
+            }
+            for blog in paginated_blogs
+        ]
+
+        return paginator.get_paginated_response(blog_data)

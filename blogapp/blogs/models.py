@@ -16,7 +16,7 @@ class Blogs(models.Model):
 class Tags(models.Model):
     tag = models.CharField(max_length=20)
     blog_id = models.ForeignKey(Blogs, on_delete=models.CASCADE ,blank=False)
-
+    
     def __str__(self):
         return self.tag
     

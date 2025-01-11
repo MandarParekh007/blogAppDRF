@@ -15,6 +15,9 @@ class UserViewSet(viewsets.ModelViewSet):
     
 
 class LoginApi(APIView):
+    def get_serializer(self, *args, **kwargs):
+        return LoginSerializer(*args, **kwargs)
+    
     def post(self, request):
         data = request.data
         serializer = LoginSerializer(data=data)
@@ -47,3 +50,10 @@ class LoginApi(APIView):
             'message': 'Something went wrong',
             'data': serializer.errors
         })
+    
+    def get(self, request):
+        """
+        Provide the serializer fields in the browsable API for GET requests.
+        """
+        serializer = self.get_serializer()
+        return Response(serializer.data)
