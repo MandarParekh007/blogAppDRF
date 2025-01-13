@@ -6,12 +6,70 @@ from rest_framework.views import APIView
 from .serializers import LoginSerializer
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    serializer_class = CustomUserSerializer
-    queryset = CustomUser.objects.all()
+class UserViewSet(APIView):
+    def get_permissions(self):
+        """
+        Dynamically assign permissions based on the request method.
+        """
+        if self.request.method == 'POST':
+            # No permission required for POST (user registration)
+            return []
+        return [IsAuthenticated()] 
+
+    def post(self, request):
+        self.permission_classes = []
+        userdata = request.data
+        user_details_ser = CustomUserSerializer(data=userdata)
+
+        if user_details_ser.is_valid():
+            user = user_details_ser.save()
+            return Response({
+                'success': True,
+                'message': 'User Created Successfully',
+                'user': {
+                    'email': user.email,
+                    'username': user.username,
+                    'phone': user.phone
+                }
+            },status=status.HTTP_201_CREATED)
+    
+        return Response({
+            'success':False,
+            'message': user_details_ser.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request, pk):
+        try:
+            user = CustomUser.objects.filter(id=pk)[0]
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure the authenticated user can only update their own details
+        if request.user != user:
+            return Response({
+                'detail': 'You do not have permission to update this user.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Update user details
+        serializer = CustomUserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'User updated successfully.',
+                'user': serializer.data
+            })
+
+        return Response({
+            'success': False,
+            'message': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     
 
 class LoginApi(APIView):

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from blogs.models import Blogs, Comments
 from rest_framework.response import Response
 from rest_framework import status
+from django.core.mail import send_mail
 
 class CommentView(APIView):
     permission_classes = [IsAuthenticated]
@@ -21,6 +22,14 @@ class CommentView(APIView):
         blog = get_object_or_404(Blogs, id=pk)
 
         comment = Comments.objects.create(comment=comment, blog_id=blog, user_id=user)
+
+        send_mail(
+            "Comment To your blog",
+            "user {} has put the comment in your blog {} the comment is {}".format(user.username,blog.title, comment.comment),
+            "mandar@aubergine.co",
+            [blog.author.email],
+            fail_silently=False,
+        )
 
         return Response({
             'success': True,

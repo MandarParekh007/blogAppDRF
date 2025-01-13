@@ -25,12 +25,10 @@ class BlogViews(APIView):
         if not isDraft:
             publish_date = now()
         
-        # Create the blog instance
         blog = Blogs.objects.create(
             title=title, content=content, author=user, isDraft=isDraft, publish_date=publish_date
         )
         
-        # Create tags and associate them with the blog
         for tag in tags_data:
             Tags.objects.create(tag=tag, blog_id=blog)
         
@@ -103,7 +101,6 @@ class BlogViews(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
     
     def get(self, request, pk=None):
-        # If `pk` is provided, fetch a specific blog
         if pk:
             user = get_object_or_404(CustomUser,id=pk)
             blogs = Blogs.objects.filter(author=user, isDraft=False)

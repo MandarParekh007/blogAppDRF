@@ -14,4 +14,4 @@ class BlogSerializer(serializers.ModelSerializer):
             Tags.objects.create(tag=tag, blog=blog)
     class Meta:
         model = Blogs
-        fields = ('title','content')
+        fields = ('title','content', 'isDraft')
