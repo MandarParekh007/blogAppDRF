@@ -28,10 +28,14 @@ class BlogViews(APIView):
         blog = Blogs.objects.create(
             title=title, content=content, author=user, isDraft=isDraft, publish_date=publish_date
         )
+
+        tags_data_to_save = [] 
         
         for tag in tags_data:
-            Tags.objects.create(tag=tag, blog_id=blog)
+            tags_data_to_save.append(Tags.objects.create(tag=tag))
         
+        blog.tags.set(tags_data_to_save)
+
         return Response({
             'success': True,
             'message': 'Blog is created successfully',

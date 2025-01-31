@@ -12,20 +12,20 @@ class CommentView(APIView):
     def post(self, request, pk):
         user = request.user
         comment = request.data.get('comment') 
-        
+
         if not comment:
             return Response({
                 'success': False,
                 'message': 'Comment text is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         blog = get_object_or_404(Blogs, id=pk)
 
         comment = Comments.objects.create(comment=comment, blog_id=blog, user_id=user)
 
         send_mail(
             "Comment To your blog",
-            "user {} has put the comment in your blog {} the comment is {}".format(user.username,blog.title, comment.comment),
+            f"user {user.username} has put the comment in your blog {blog.title} the comment is {comment.comment}",
             "mandar@aubergine.co",
             [blog.author.email],
             fail_silently=False,
